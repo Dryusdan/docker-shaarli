@@ -1,0 +1,22 @@
+#!/bin/sh
+
+addgroup -g ${GID} web && adduser -H -s /bin/sh -D -G web -u ${UID} web
+
+sed -i -e 's/<URL>/'$URL'/g' /nginx/sites-enabled/shaarli.conf
+
+
+mkdir -p /nginx /php
+if [ `find  /plugins -type f | wc -l` -eq 0 ] ; then
+  cp -R /shaarli/plugins/* /plugins/
+else
+  cp -R /plugins/* /shaarli/plugins
+fi
+  
+chown -R web:web /nginx /php /shaarli/data /etc/s6.d
+chmod +x /etc/s6.d/*/run /etc/s6.d/.s6-svscan/finish
+
+if [ '$@' == '' ]; then
+    exec su-exec web:web /bin/s6-svscan /etc/s6.d
+else
+    exec su-exec web:web "$@"
+fi
